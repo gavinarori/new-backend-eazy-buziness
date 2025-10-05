@@ -8,6 +8,8 @@ export interface ProductImage {
 export interface ProductDocument extends Document {
   name: string;
   description?: string;
+  sku?: string;
+  barcode?: string;
   price: number;
   stock: number;
   shopId: mongoose.Types.ObjectId;
@@ -21,6 +23,8 @@ const productSchema = new Schema<ProductDocument>(
   {
     name: { type: String, required: true },
     description: { type: String },
+    sku: { type: String, index: true, unique: false },
+    barcode: { type: String, index: true, unique: false },
     price: { type: Number, required: true, min: 0 },
     stock: { type: Number, required: true, min: 0 },
     shopId: { type: Schema.Types.ObjectId, ref: 'Shop', required: true, index: true },

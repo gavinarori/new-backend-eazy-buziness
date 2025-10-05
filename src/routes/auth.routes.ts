@@ -6,7 +6,7 @@ export const authRouter = Router();
 
 authRouter.post('/register', register);
 authRouter.post('/login', login);
-authRouter.get('/me', requireAuth, me);
+authRouter.get('/me', me);
 authRouter.post('/logout', requireAuth, logout);
 
 
