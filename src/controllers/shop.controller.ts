@@ -1,12 +1,31 @@
 import { Request, Response, NextFunction } from 'express';
 import createHttpError from 'http-errors';
 import { Shop } from '../models/Shop';
+import { User } from '../models/User';
 
 export async function createShop(req: Request, res: Response, next: NextFunction) {
   try {
     if (!req.user) throw createHttpError(401, 'Unauthorized');
-    const { name, description } = req.body as { name: string; description?: string };
-    const shop = await Shop.create({ name, description, ownerId: req.user.id, status: 'pending' });
+    const { name, description, address, phone, currency, vatRate } = req.body as {
+      name: string;
+      description?: string;
+      address?: string;
+      phone?: string;
+      currency?: string;
+      vatRate?: number;
+    };
+    const shop = await Shop.create({
+      name,
+      description,
+      address,
+      phone,
+      currency,
+      vatRate,
+      ownerId: req.user.id,
+      status: 'pending',
+    });
+    // link user to shop
+    await User.findByIdAndUpdate(req.user.id, { shopId: shop._id });
     res.status(201).json({ shop });
   } catch (err) {
     next(err);
