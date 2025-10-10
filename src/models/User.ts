@@ -9,6 +9,7 @@ export interface UserDocument extends Document {
   name: string;
   role: UserRole;
   shopId?: mongoose.Types.ObjectId | null;
+  isActive: boolean;
   comparePassword(candidate: string): Promise<boolean>;
 }
 
@@ -19,6 +20,7 @@ const userSchema = new Schema<UserDocument>(
     name: { type: String, required: true },
     role: { type: String, enum: ['customer', 'seller', 'admin', 'superadmin'], default: 'customer' },
     shopId: { type: Schema.Types.ObjectId, ref: 'Shop', default: null },
+    isActive: { type: Boolean, default: true },
   },
   { timestamps: true },
 );

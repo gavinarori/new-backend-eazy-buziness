@@ -10,6 +10,7 @@ import { settingsRouter } from './settings.routes';
 import { notificationRouter } from './notification.routes';
 import { invoiceRouter } from './invoice.routes';
 import { reportRouter } from './report.routes';
+import { userRouter } from './user.routes';
 
 export const apiRouter = Router();
 
@@ -18,6 +19,7 @@ apiRouter.get('/', (_req, res) => res.json({ message: 'Easybizness API' }));
 // Mount feature routers here as they are implemented
 apiRouter.use('/auth', authRouter);
 apiRouter.use('/shops', shopRouter);
+apiRouter.use('/users', userRouter);
 apiRouter.use('/products', productRouter);
 apiRouter.use('/categories', categoryRouter);
 apiRouter.use('/orders', orderRouter);
