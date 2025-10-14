@@ -3,15 +3,20 @@ import mongoose, { Schema, Document, Model } from 'mongoose';
 export interface CategoryDocument extends Document {
   name: string;
   slug: string;
+  shopId: mongoose.Types.ObjectId;
 }
 
 const categorySchema = new Schema<CategoryDocument>(
   {
-    name: { type: String, required: true, unique: true },
-    slug: { type: String, required: true, unique: true, lowercase: true },
+    name: { type: String, required: true },
+    slug: { type: String, required: true, lowercase: true },
   },
   { timestamps: true },
 );
+
+// Ensure uniqueness per shop
+categorySchema.index({ shopId: 1, name: 1 }, { unique: true });
+categorySchema.index({ shopId: 1, slug: 1 }, { unique: true });
 
 export const Category: Model<CategoryDocument> = mongoose.model<CategoryDocument>('Category', categorySchema);
 

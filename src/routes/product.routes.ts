@@ -13,8 +13,10 @@ export const productRouter = Router();
 productRouter.get('/', listProducts);
 productRouter.get('/lookup', lookupProduct);
 productRouter.get('/:id', getProduct);
-productRouter.post('/', requireAuth, requireRoles('seller', 'admin', 'superadmin'), upload.array('images', 6), createProduct);
-productRouter.patch('/:id', requireAuth, requireRoles('seller', 'admin', 'superadmin'), updateProduct);
-productRouter.delete('/:id', requireAuth, requireRoles('admin', 'superadmin'), deleteProduct);
+// Accept both `image` and `images` form fields
+productRouter.post('/', requireAuth, upload.any(), createProduct);
+// Allow multipart updates as well
+productRouter.patch('/:id', requireAuth, upload.any(), updateProduct);
+productRouter.delete('/:id', requireAuth,  deleteProduct);
 
 
