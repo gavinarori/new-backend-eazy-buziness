@@ -4,19 +4,26 @@ import { Category } from '../models/Category';
 
 export async function createCategory(req: Request, res: Response, next: NextFunction) {
   try {
-    const { name, slug } = req.body as { name: string; slug: string };
-    const exists = await Category.findOne({ $or: [{ name }, { slug }] });
+    const { name, slug } = req.body as { name: string; slug?: string };
+    const finalSlug = slug ? slug.toLowerCase() : name.toLowerCase().replace(/\s+/g, '-');
+
+    const exists = await Category.findOne({ $or: [{ name }, { slug: finalSlug }] });
     if (exists) throw createHttpError(409, 'Category exists');
-    const category = await Category.create({ name, slug: slug.toLowerCase() });
+
+    const category = await Category.create({ name, slug: finalSlug, });
     res.status(201).json({ category });
   } catch (err) {
     next(err);
   }
 }
 
-export async function listCategories(_req: Request, res: Response, next: NextFunction) {
+
+export async function listCategories(req: Request, res: Response, next: NextFunction) {
   try {
-    const categories = await Category.find().sort({ name: 1 });
+    const { shopId } = req.query as any;
+    const filter: any = {};
+    if (shopId) filter.shopId = shopId;
+    const categories = await Category.find(filter).sort({ name: 1 });
     res.json({ categories });
   } catch (err) {
     next(err);

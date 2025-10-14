@@ -11,12 +11,12 @@ export interface ProductDocument extends Document {
   sku?: string;
   barcode?: string;
   price: number;
+  cost?: number;
   stock: number;
+  minStock?: number;
   shopId: mongoose.Types.ObjectId;
   categoryId?: mongoose.Types.ObjectId | null;
   images: ProductImage[];
-  ratingAverage: number;
-  ratingCount: number;
 }
 
 const productSchema = new Schema<ProductDocument>(
@@ -26,8 +26,9 @@ const productSchema = new Schema<ProductDocument>(
     sku: { type: String, index: true, unique: false },
     barcode: { type: String, index: true, unique: false },
     price: { type: Number, required: true, min: 0 },
+    cost: { type: Number, default: 0, min: 0 },
     stock: { type: Number, required: true, min: 0 },
-    shopId: { type: Schema.Types.ObjectId, ref: 'Shop', required: true, index: true },
+    minStock: { type: Number, default: 0, min: 0 },
     categoryId: { type: Schema.Types.ObjectId, ref: 'Category', default: null },
     images: [
       {
@@ -35,8 +36,6 @@ const productSchema = new Schema<ProductDocument>(
         publicId: { type: String, required: true },
       },
     ],
-    ratingAverage: { type: Number, default: 0 },
-    ratingCount: { type: Number, default: 0 },
   },
   { timestamps: true },
 );
