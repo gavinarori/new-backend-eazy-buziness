@@ -14,8 +14,8 @@ export interface ProductDocument extends Document {
   cost?: number;
   stock: number;
   minStock?: number;
-  shopId: mongoose.Types.ObjectId;
-  categoryId?: mongoose.Types.ObjectId | null;
+  shopId: string;
+  categoryId?: string | null;
   images: ProductImage[];
 }
 
@@ -29,13 +29,9 @@ const productSchema = new Schema<ProductDocument>(
     cost: { type: Number, default: 0, min: 0 },
     stock: { type: Number, required: true, min: 0 },
     minStock: { type: Number, default: 0, min: 0 },
-    categoryId: { type: Schema.Types.ObjectId, ref: 'Category', default: null },
-    images: [
-      {
-        url: { type: String, required: true },
-        publicId: { type: String, required: true },
-      },
-    ],
+    shopId: { type: String, ref: 'Shop', required: true },
+    categoryId: { type: String, ref: 'Category', default: null },
+    images: [{ url: String, publicId: String }],
   },
   { timestamps: true },
 );

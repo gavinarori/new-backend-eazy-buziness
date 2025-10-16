@@ -1,11 +1,15 @@
 import { Router } from 'express';
-import { createInvoice, listInvoices, updateInvoiceStatus } from '../controllers/invoice.controller';
-import { requireAuth, requireRoles } from '../middlewares/auth.middleware';
+import {
+  createOrUpdateInvoice,
+  listInvoices,
+  deleteInvoice,
+} from '../controllers/invoice.controller';
+import { requireAuth } from '../middlewares/auth.middleware';
 
 export const invoiceRouter = Router();
 
-invoiceRouter.get('/', requireAuth, requireRoles('seller', 'admin', 'superadmin'), listInvoices);
-invoiceRouter.post('/', requireAuth, requireRoles('seller', 'admin', 'superadmin'), createInvoice);
-invoiceRouter.patch('/:id/status', requireAuth, requireRoles('seller', 'admin', 'superadmin'), updateInvoiceStatus);
 
-
+invoiceRouter.get('/', requireAuth, listInvoices);
+invoiceRouter.post('/', requireAuth, createOrUpdateInvoice);
+invoiceRouter.patch('/:id', requireAuth, createOrUpdateInvoice);
+invoiceRouter.delete('/:id', requireAuth, deleteInvoice);
