@@ -12,7 +12,8 @@ export async function createSupply(req: Request, res: Response, next: NextFuncti
     if (!req.user) throw createHttpError(401, 'Unauthorized');
 
     const { shopId, supplierName, items, receivedAt } = req.body as any;
-    if (!Array.isArray(items) || !items.length) throw createHttpError(400, 'No items provided');
+    if (!Array.isArray(items) || !items.length)
+      throw createHttpError(400, 'No items provided');
 
     const totalCost = items.reduce((s: number, i: any) => s + i.quantity * i.unitCost, 0);
     const supply = await Supply.create({ shopId, supplierName, items, totalCost, receivedAt });
@@ -58,42 +59,41 @@ export async function updateSupply(req: Request, res: Response, next: NextFuncti
     if (!req.user) throw createHttpError(401, 'Unauthorized');
 
     const { id } = req.params;
-    const { supplierName, items, receivedAt, status, notes } = req.body as any;
+    const { supplierName, items, receivedAt, notes } = req.body as any;
 
-    const existingSupply:any = await Supply.findById(id);
+    const existingSupply: any = await Supply.findById(id);
     if (!existingSupply) throw createHttpError(404, 'Supply not found');
 
-    // Revert previous stock before applying new quantities
+    // 🧾 Revert previous stock before applying new quantities
     for (const oldItem of existingSupply.items) {
       await Product.findByIdAndUpdate(oldItem.productId, { $inc: { stock: -oldItem.quantity } });
       await InventoryTransaction.create({
         shopId: existingSupply.shopId,
         productId: oldItem.productId,
-        type: 'adjustment',
-        quantity: -oldItem.quantity,
+        type: 'adjustment_out', // ✅ stock decreasing
+        quantity: oldItem.quantity,
         note: `Revert old supply quantities for update: ${id}`,
       });
     }
 
-    // Calculate new total
+    // 🧮 Calculate new total
     const totalCost = items.reduce((s: number, i: any) => s + i.quantity * i.unitCost, 0);
 
-    // Update the supply
+    // 🧩 Update the supply
     existingSupply.supplierName = supplierName;
     existingSupply.items = items;
     existingSupply.receivedAt = receivedAt;
     existingSupply.totalCost = totalCost;
     existingSupply.notes = notes || existingSupply.notes;
-
     await existingSupply.save();
 
-    // Re-apply stock with updated quantities
+    // 🏗️ Re-apply stock with updated quantities
     for (const i of items) {
       await Product.findByIdAndUpdate(i.productId, { $inc: { stock: i.quantity } });
       await InventoryTransaction.create({
         shopId: existingSupply.shopId,
         productId: i.productId,
-        type: 'supply',
+        type: 'adjustment_in', // ✅ stock increasing again
         quantity: i.quantity,
         note: `Supply updated: ${id}`,
       });
@@ -101,6 +101,7 @@ export async function updateSupply(req: Request, res: Response, next: NextFuncti
 
     res.json({ supply: existingSupply });
   } catch (err) {
+    console.error('Update supply error:', err);
     next(err);
   }
 }
@@ -116,14 +117,14 @@ export async function deleteSupply(req: Request, res: Response, next: NextFuncti
     const supply = await Supply.findById(id);
     if (!supply) throw createHttpError(404, 'Supply not found');
 
-    // Roll back product stock
+    // 🧾 Roll back product stock
     for (const i of supply.items) {
       await Product.findByIdAndUpdate(i.productId, { $inc: { stock: -i.quantity } });
       await InventoryTransaction.create({
         shopId: supply.shopId,
         productId: i.productId,
-        type: 'adjustment',
-        quantity: -i.quantity,
+        type: 'adjustment_out', // ✅ valid enum for stock decrease
+        quantity: i.quantity,
         note: `Supply deleted: ${id}`,
       });
     }
@@ -131,6 +132,7 @@ export async function deleteSupply(req: Request, res: Response, next: NextFuncti
     await Supply.findByIdAndDelete(id);
     res.json({ message: 'Supply deleted successfully' });
   } catch (err) {
+    console.error('Delete supply error:', err);
     next(err);
   }
 }
