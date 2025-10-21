@@ -1,7 +1,7 @@
 import mongoose, { Schema, Document, Model } from 'mongoose';
 import bcrypt from 'bcryptjs';
 
-export type UserRole = 'customer' | 'seller' | 'admin' | 'superadmin';
+export type UserRole = 'customer' | 'seller' | 'admin' | 'superadmin' | 'staff';
 
 export interface UserDocument extends Document {
   email: string;
@@ -10,6 +10,11 @@ export interface UserDocument extends Document {
   role: UserRole;
   shopId?: mongoose.Types.ObjectId | null;
   isActive: boolean;
+  phone?: string;
+  permissions?: string[];
+  salesTarget?: number;
+  commissionRate?: number;
+  createdBy?: mongoose.Types.ObjectId;
   comparePassword(candidate: string): Promise<boolean>;
 }
 
@@ -18,9 +23,14 @@ const userSchema = new Schema<UserDocument>(
     email: { type: String, required: true, unique: true, lowercase: true, index: true },
     password: { type: String, required: true },
     name: { type: String, required: true },
-    role: { type: String, enum: ['customer', 'seller', 'admin', 'superadmin'], default: 'customer' },
+    role: { type: String, enum: ['customer', 'seller', 'admin', 'superadmin', 'staff'], default: 'customer' },
     shopId: { type: Schema.Types.ObjectId, ref: 'Shop', default: null },
     isActive: { type: Boolean, default: true },
+    phone: { type: String },
+    permissions: [{ type: String }],
+    salesTarget: { type: Number, default: 100 },
+    commissionRate: { type: Number, default: 5 },
+    createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
   },
   { timestamps: true },
 );
