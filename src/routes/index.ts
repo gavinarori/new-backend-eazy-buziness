@@ -9,6 +9,7 @@ import { supplyRouter } from './supply.routes';
 import { settingsRouter } from './settings.routes';
 import { notificationRouter } from './notification.routes';
 import { invoiceRouter } from './invoice.routes';
+import { saleRouter } from './sale.routes';
 import { reportRouter } from './report.routes';
 import { userRouter } from './user.routes';
 
@@ -28,6 +29,7 @@ apiRouter.use('/supplies', supplyRouter);
 apiRouter.use('/settings', settingsRouter);
 apiRouter.use('/notifications', notificationRouter);
 apiRouter.use('/invoices', invoiceRouter);
+apiRouter.use('/sales', saleRouter);
 apiRouter.use('/reports', reportRouter);
 
 
