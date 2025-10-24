@@ -1,5 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import { Invoice } from '../models/Invoice';
+import { Shop } from '../models/Shop';
+
+
 
 
 export async function createOrUpdateInvoice(req: Request, res: Response, next: NextFunction) {
@@ -14,54 +17,120 @@ export async function createOrUpdateInvoice(req: Request, res: Response, next: N
       total,
       dueDate,
       status,
+      createdBy,
     } = req.body as any;
 
-    let invoice;
+    // ✅ Validate required fields
+    if (!shopId || !customerName || !items?.length || subtotal == null) {
+      return res.status(400).json({ message: 'Missing required invoice fields.' });
+    }
 
+
+
+    // ✅ Fetch shop for VAT info (optional)
+    const shop = await Shop.findById(shopId);
+    if (!shop) {
+      return res.status(400).json({ message: 'Shop not found.' });
+    }
+
+    // ✅ Calculate VAT and total if not provided
+    const vatRate = shop.vatRate || 0;
+    const calculatedTax = tax ?? subtotal * (vatRate / 100);
+    const calculatedTotal = total ?? subtotal + calculatedTax;
+
+    // ✅ Use createdBy from frontend (fallback to req.user if available)
+    const currentUser = (req as any).user || {};
+    const createdById =
+      createdBy?.id || currentUser._id || null;
+
+    if (!createdById) {
+      return res.status(400).json({ message: 'Missing createdBy information.' });
+    }
+
+    // ✅ If updating
     if (id) {
-   
-      invoice = await Invoice.findByIdAndUpdate(
+      const updatedInvoice = await Invoice.findByIdAndUpdate(
         id,
-        { shopId, customerName, items, subtotal, tax, total, dueDate, status },
+        {
+          shopId,
+          customerName,
+          items,
+          subtotal,
+          tax: calculatedTax,
+          total: calculatedTotal,
+          dueDate,
+          status,
+          createdBy: createdById,
+        },
         { new: true, runValidators: true }
       );
 
-      if (!invoice) {
-        return res.status(404).json({ message: 'Invoice not found' });
+      if (!updatedInvoice) {
+        return res.status(404).json({ message: 'Invoice not found.' });
       }
 
       return res.status(200).json({
         message: 'Invoice updated successfully',
-        invoice,
+        invoice: updatedInvoice,
       });
     }
 
-  
-    invoice = await Invoice.create({
+    // ✅ If creating new
+    const newInvoice = await Invoice.create({
       shopId,
       customerName,
       items,
       subtotal,
-      tax,
-      total,
+      tax: calculatedTax,
+      total: calculatedTotal,
       dueDate,
       status,
+      createdBy: createdById,
     });
 
     return res.status(201).json({
       message: 'Invoice created successfully',
-      invoice,
+      invoice: newInvoice,
     });
-  } catch (err) {
-    next(err);
+  } catch (err: any) {
+    console.error('❌ createOrUpdateInvoice error:', err.message);
+    res.status(500).json({
+      message: 'Internal Server Error',
+      error: err.message,
+    });
   }
 }
+
 
 
 export async function listInvoices(req: Request, res: Response, next: NextFunction) {
   try {
     const { shopId } = req.query as any;
-    const invoices = await Invoice.find(shopId ? { shopId } : {}).sort({ createdAt: -1 });
+    const currentUser = (req as any).user;
+
+    let query: any = {};
+
+    // Role-based filtering
+    if (currentUser.role === 'superadmin' || currentUser.role === 'admin') {
+      // Super admin and admin can see all invoices
+      if (shopId) query.shopId = shopId;
+    } else if (currentUser.role === 'seller') {
+      // Sellers can see all invoices from their shop
+      query.shopId = currentUser.shopId;
+    } else if (currentUser.role === 'staff') {
+      // Staff can only see invoices they created
+      query.shopId = currentUser.shopId;
+      query.createdBy = currentUser._id;
+    } else {
+      // Other roles see no invoices
+      query._id = null;
+    }
+
+    const invoices = await Invoice.find(query)
+      .populate('createdBy', 'name email')
+      .populate('shopId', 'name')
+      .sort({ createdAt: -1 });
+    
     res.json({ invoices });
   } catch (err) {
     next(err);

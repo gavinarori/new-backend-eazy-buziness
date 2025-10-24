@@ -6,10 +6,25 @@ import { Shop } from '../models/Shop';
 export async function listUsers(req: Request, res: Response, next: NextFunction) {
   try {
     const { shopId } = req.query;
+    const currentUser = (req as any).user;
 
     let query: any = {};
 
-    if (shopId) query.shopId = shopId;
+    // Role-based filtering
+    if (currentUser.role === 'superadmin' || currentUser.role === 'admin') {
+      // Super admin and admin can see all users
+      if (shopId) query.shopId = shopId;
+    } else if (currentUser.role === 'seller') {
+      // Sellers can only see staff users under their shop
+      query.shopId = currentUser.shopId;
+      query.role = 'staff';
+    } else if (currentUser.role === 'staff') {
+      // Staff can only see themselves
+      query._id = currentUser._id;
+    } else {
+      // Other roles see no users
+      query._id = null;
+    }
 
     const users = await User.find(query)
       .populate('shopId', 'name')

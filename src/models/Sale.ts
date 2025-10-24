@@ -1,29 +1,31 @@
 import mongoose, { Schema, Document, Model } from 'mongoose';
 
-export interface InvoiceItem {
+export interface SaleItem {
+  productId: mongoose.Types.ObjectId;
   description: string;
   quantity: number;
   unitPrice: number;
 }
 
-export interface InvoiceDocument extends Document {
+export interface SaleDocument extends Document {
   shopId: mongoose.Types.ObjectId;
   customerName: string;
-  items: InvoiceItem[];
+  items: SaleItem[];
   subtotal: number;
   tax: number;
   total: number;
-  dueDate?: Date | null;
-  status: 'draft' | 'sent' | 'paid' | 'void';
+  paymentMethod: 'cash' | 'card' | 'mobile' | 'bank_transfer';
+  saleNumber?: string;
   createdBy: mongoose.Types.ObjectId;
 }
 
-const invoiceSchema = new Schema<InvoiceDocument>(
+const saleSchema = new Schema<SaleDocument>(
   {
     shopId: { type: Schema.Types.ObjectId, ref: 'Shop', required: true, index: true },
     customerName: { type: String, required: true },
     items: [
       {
+        productId: { type: Schema.Types.ObjectId, ref: 'Product', required: true },
         description: { type: String, required: true },
         quantity: { type: Number, required: true, min: 1 },
         unitPrice: { type: Number, required: true, min: 0 },
@@ -32,13 +34,24 @@ const invoiceSchema = new Schema<InvoiceDocument>(
     subtotal: { type: Number, required: true },
     tax: { type: Number, required: true },
     total: { type: Number, required: true },
-    dueDate: { type: Date, default: null },
-    status: { type: String, enum: ['draft', 'sent', 'paid', 'void'], default: 'draft' },
+    paymentMethod: { 
+      type: String, 
+      enum: ['cash', 'card', 'mobile', 'bank_transfer'], 
+      required: true 
+    },
+    saleNumber: { type: String },
     createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
   },
   { timestamps: true },
 );
 
-export const Invoice: Model<InvoiceDocument> = mongoose.model<InvoiceDocument>('Invoice', invoiceSchema);
+// Generate sale number before saving
+saleSchema.pre('save', async function (next) {
+  if (!this.saleNumber) {
+    const count = await this.constructor.countDocuments();
+    this.saleNumber = `SALE-${String(count + 1).padStart(6, '0')}`;
+  }
+  next();
+});
 
-
+export const Sale: Model<SaleDocument> = mongoose.model<SaleDocument>('Sale', saleSchema);
