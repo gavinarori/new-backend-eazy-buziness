@@ -2,7 +2,7 @@ import { Router } from 'express';
 import multer from 'multer';
 import os from 'os';
 import path from 'path';
-import { createProduct, listProducts, getProduct, updateProduct, deleteProduct, lookupProduct } from '../controllers/product.controller';
+import { createProduct, listProducts, getProduct, updateProduct, deleteProduct, lookupProduct, updateStock } from '../controllers/product.controller';
 import { requireAuth, requireRoles } from '../middlewares/auth.middleware';
 
 // Use disk storage temp dir; Cloudinary upload in controller
@@ -17,6 +17,8 @@ productRouter.get('/:id', getProduct);
 productRouter.post('/', requireAuth, upload.any(), createProduct);
 // Allow multipart updates as well
 productRouter.patch('/:id', requireAuth, upload.any(), updateProduct);
+// Stock update endpoint
+productRouter.patch('/:id/stock', requireAuth, updateStock);
 productRouter.delete('/:id', requireAuth,  deleteProduct);
 
 
