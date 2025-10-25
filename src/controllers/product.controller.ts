@@ -116,6 +116,38 @@ export async function deleteProduct(req: Request, res: Response, next: NextFunct
   }
 }
 
+export async function updateStock(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { id } = req.params;
+    const { stock, operation = 'set' } = req.body;
+    
+    if (typeof stock !== 'number' || stock < 0) {
+      throw createHttpError(400, 'Invalid stock value');
+    }
+
+    let updateQuery: any;
+    switch (operation) {
+      case 'add':
+        updateQuery = { $inc: { stock } };
+        break;
+      case 'subtract':
+        updateQuery = { $inc: { stock: -stock } };
+        break;
+      case 'set':
+      default:
+        updateQuery = { stock };
+        break;
+    }
+
+    const product = await Product.findByIdAndUpdate(id, updateQuery, { new: true });
+    if (!product) throw createHttpError(404, 'Product not found');
+    
+    res.json({ product });
+  } catch (err) {
+    next(err);
+  }
+}
+
 export async function lookupProduct(req: Request, res: Response, next: NextFunction) {
   try {
     const { sku, barcode, shopId } = req.query as any;
