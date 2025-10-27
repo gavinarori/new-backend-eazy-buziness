@@ -4,6 +4,10 @@ dotenv.config();
 import mongoose from 'mongoose';
 import { createApp } from './app';
 import { logger } from './utils/logger';
+import { configureCloudinary } from './config/cloudinary'; 
+
+// Initialize Cloudinary early
+configureCloudinary();
 
 const MONGO_URI = process.env.MONGO_URI as string;
 const PORT = Number(process.env.PORT) || 4000;
@@ -18,6 +22,7 @@ async function start() {
       logger.error('Missing JWT secrets in environment');
       process.exit(1);
     }
+
     await mongoose.connect(MONGO_URI);
     logger.info('Connected to MongoDB');
 
@@ -30,5 +35,3 @@ async function start() {
 }
 
 start();
-
-

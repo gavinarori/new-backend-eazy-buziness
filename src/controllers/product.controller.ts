@@ -5,43 +5,50 @@ import { cloudinary } from '../config/cloudinary';
 
 export async function createProduct(req: Request, res: Response, next: NextFunction) {
   try {
-    if (!req.user) throw createHttpError(401, 'Unauthorized');
     const { name, description, price, cost, stock, minStock, shopId, categoryId, sku } = req.body as any;
-    // Enforce shop approval
+
+    console.log("Incoming body:", req.body);
+    console.log("Incoming files:", req.files);
+
     const { Shop } = await import('../models/Shop');
-    
     const files = (Array.isArray(req.files) ? (req.files as Express.Multer.File[]) : []) || [];
 
     const images = [] as Array<{ url: string; publicId: string }>;
     for (const file of files) {
-      const uploaded = await cloudinary.uploader.upload(file.path, {
-        folder: 'easybizness/products',
-        resource_type: 'image',
-      });
-      images.push({ url: uploaded.secure_url, publicId: uploaded.public_id });
+      try {
+        const uploaded = await cloudinary.uploader.upload(file.path);
+        images.push({ url: uploaded.secure_url, publicId: uploaded.public_id });
+      } catch (uploadErr) {
+        console.error("Cloudinary upload error:", uploadErr);
+        throw createHttpError(500, 'Image upload failed');
+      }
     }
 
-    // Auto-generate barcode if missing: 12-digit numeric with time + random
-    const generatedBarcode = `EZ${Date.now()}${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`;
+    const generatedBarcode = `EZ${Date.now()}${Math.floor(Math.random() * 1000)
+      .toString()
+      .padStart(3, '0')}`;
 
     const product = await Product.create({
       name,
       description,
-      price,
-      cost: typeof cost !== 'undefined' ? Number(cost) : undefined,
-      stock,
-      minStock: typeof minStock !== 'undefined' ? Number(minStock) : undefined,
+      price: Number(price),
+      cost: Number(cost ?? 0),
+      stock: Number(stock),
+      minStock: Number(minStock ?? 0),
       shopId,
       categoryId: categoryId || null,
       sku,
       barcode: generatedBarcode,
       images,
     });
+
     res.status(201).json({ product });
   } catch (err) {
+    console.error("Create product error:", err);
     next(err);
   }
 }
+
 
 export async function listProducts(req: Request, res: Response, next: NextFunction) {
   try {

@@ -16,7 +16,7 @@ export async function listUsers(req: Request, res: Response, next: NextFunction)
       if (shopId) query.shopId = shopId;
     } else if (currentUser.role === 'seller') {
       // Sellers can only see staff users under their shop
-      query.shopId = currentUser.shopId;
+      query.shopId = currentUser.shopId?._id;
       query.role = 'staff';
     } else if (currentUser.role === 'staff') {
       // Staff can only see themselves
