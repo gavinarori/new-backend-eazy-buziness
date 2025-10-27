@@ -20,23 +20,7 @@ export async function createOrUpdateInvoice(req: Request, res: Response, next: N
       createdBy,
     } = req.body as any;
 
-    // ✅ Validate required fields
-    if (!shopId || !customerName || !items?.length || subtotal == null) {
-      return res.status(400).json({ message: 'Missing required invoice fields.' });
-    }
 
-
-
-    // ✅ Fetch shop for VAT info (optional)
-    const shop = await Shop.findById(shopId);
-    if (!shop) {
-      return res.status(400).json({ message: 'Shop not found.' });
-    }
-
-    // ✅ Calculate VAT and total if not provided
-    const vatRate = shop.vatRate || 0;
-    const calculatedTax = tax ?? subtotal * (vatRate / 100);
-    const calculatedTotal = total ?? subtotal + calculatedTax;
 
     // ✅ Use createdBy from frontend (fallback to req.user if available)
     const currentUser = (req as any).user || {};
@@ -56,8 +40,8 @@ export async function createOrUpdateInvoice(req: Request, res: Response, next: N
           customerName,
           items,
           subtotal,
-          tax: calculatedTax,
-          total: calculatedTotal,
+          tax,
+          total,
           dueDate,
           status,
           createdBy: createdById,
@@ -81,8 +65,8 @@ export async function createOrUpdateInvoice(req: Request, res: Response, next: N
       customerName,
       items,
       subtotal,
-      tax: calculatedTax,
-      total: calculatedTotal,
+      tax,
+      total,
       dueDate,
       status,
       createdBy: createdById,
@@ -100,6 +84,31 @@ export async function createOrUpdateInvoice(req: Request, res: Response, next: N
     });
   }
 }
+
+export async function updateInvoiceStatus(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    if (!status) {
+      return res.status(400).json({ message: 'Status is required' });
+    }
+
+    const invoice = await Invoice.findById(id);
+    if (!invoice) {
+      return res.status(404).json({ message: 'Invoice not found' });
+    }
+
+    invoice.status = status;
+    await invoice.save();
+
+    res.json({ message: 'Invoice status updated successfully', invoice });
+  } catch (err) {
+    console.error('❌ updateInvoiceStatus error:', err);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+}
+
 
 
 

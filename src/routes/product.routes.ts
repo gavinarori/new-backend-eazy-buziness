@@ -14,7 +14,7 @@ productRouter.get('/', listProducts);
 productRouter.get('/lookup', lookupProduct);
 productRouter.get('/:id', getProduct);
 // Accept both `image` and `images` form fields
-productRouter.post('/', requireAuth, upload.any(), createProduct);
+productRouter.post('/', upload.any(), createProduct);
 // Allow multipart updates as well
 productRouter.patch('/:id', requireAuth, upload.any(), updateProduct);
 // Stock update endpoint
