@@ -52,6 +52,7 @@ export async function register(req: Request, res: Response, next: NextFunction) 
     const { password: _, ...userData } = userDoc.toObject();
 
     res.status(201).json({ user: userData });
+    console.log(userData)
   } catch (err) {
     next(err);
   }
