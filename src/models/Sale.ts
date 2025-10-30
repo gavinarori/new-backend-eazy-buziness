@@ -51,10 +51,12 @@ const saleSchema = new Schema<SaleDocument>(
 // Auto-generate incremental sale number
 saleSchema.pre('save', async function (next) {
   if (!this.saleNumber) {
-    const count = await this.constructor.countDocuments();
+    const SaleModel = this.constructor as mongoose.Model<SaleDocument>;
+    const count = await SaleModel.countDocuments();
     this.saleNumber = `SALE-${String(count + 1).padStart(6, '0')}`;
   }
   next();
 });
+
 
 export const Sale: Model<SaleDocument> = mongoose.model<SaleDocument>('Sale', saleSchema);
