@@ -33,26 +33,13 @@ export async function register(req: Request, res: Response, next: NextFunction) 
     const accessToken = signAccessToken(payload);
     const refreshToken = signRefreshToken(payload);
 
-    // Set secure cookies
-    res.cookie('accessToken', accessToken, {
-      httpOnly: true,
-      secure: process.env.COOKIE_SECURE === 'true',
-      domain: process.env.COOKIE_DOMAIN,
-      sameSite: 'lax',
-    });
-
-    res.cookie('refreshToken', refreshToken, {
-      httpOnly: true,
-      secure: process.env.COOKIE_SECURE === 'true',
-      domain: process.env.COOKIE_DOMAIN,
-      sameSite: 'lax',
-    });
-
-    // Return only public fields
     const { password: _, ...userData } = userDoc.toObject();
 
-    res.status(201).json({ user: userData });
-    console.log(userData)
+    // 👇 Return tokens in JSON (frontend stores them in localStorage)
+    res.status(201).json({
+      user: userData,
+      tokens: { accessToken, refreshToken },
+    });
   } catch (err) {
     next(err);
   }
@@ -80,24 +67,12 @@ export async function login(req: Request, res: Response, next: NextFunction) {
     const accessToken = signAccessToken(payload);
     const refreshToken = signRefreshToken(payload);
 
-    res.cookie('accessToken', accessToken, {
-      httpOnly: true,
-      secure: process.env.COOKIE_SECURE === 'true',
-      domain: process.env.COOKIE_DOMAIN,
-      sameSite: 'lax',
-    });
-
-    res.cookie('refreshToken', refreshToken, {
-      httpOnly: true,
-      secure: process.env.COOKIE_SECURE === 'true',
-      domain: process.env.COOKIE_DOMAIN,
-      sameSite: 'lax',
-    });
-
-    // Safely remove password (type-safe)
     const { password: _, ...userData } = userDoc.toObject();
 
-    res.json({ user: userData });
+    res.json({
+      user: userData,
+      tokens: { accessToken, refreshToken },
+    });
   } catch (err) {
     next(err);
   }
@@ -106,13 +81,14 @@ export async function login(req: Request, res: Response, next: NextFunction) {
 /**
  * GET AUTHENTICATED USER
  */
-export async function me(req: Request, res: Response) { res.json({ user: req.user }); }
+export async function me(req: Request, res: Response) {
+  res.json({ user: req.user });
+}
 
 /**
  * LOGOUT USER
  */
 export async function logout(_req: Request, res: Response) {
-  res.clearCookie('accessToken');
-  res.clearCookie('refreshToken');
+  // no cookies to clear now — just send 204
   res.status(204).send();
 }
